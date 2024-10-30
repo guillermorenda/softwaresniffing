@@ -1,0 +1,8 @@
+name: mobius-platform
+
+services:
+    mysql:
+        container_name: "mysql-container"
+        image: "mysql:8.0.40-debian"
+        env_file: ".env"
+        restart: always
