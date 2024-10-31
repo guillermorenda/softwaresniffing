@@ -18,6 +18,8 @@
 --
 -- Table structure for table `acp`
 --
+CREATE DATABASE mobiusdatabase;
+USE mobiusdatabase;
 
 DROP TABLE IF EXISTS `acp`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

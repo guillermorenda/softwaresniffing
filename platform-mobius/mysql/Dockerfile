@@ -4,6 +4,6 @@ RUN mkdir resources
 
 WORKDIR "/resources"
 
-COPY ./resources/init.sh ./mobiusdb.sql ./
+COPY ./resources/mobiusdb.sql /docker-entrypoint-initdb.d/
 
-RUN chmod 0555 ./init.sh && ./init.sh
+
