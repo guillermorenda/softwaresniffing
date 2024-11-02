@@ -14,7 +14,7 @@
  * @author Il Yeup Ahn [iyahn@keti.re.kr]
  */
 
-var mysql = require('mysql');
+var mysql = require('mysql2');
 
 var mysql_pool = null;
 
@@ -23,11 +23,11 @@ var mysql_pool = null;
 
 exports.connect = function (host, port, user, password, callback) {
     mysql_pool = mysql.createPool({
-        host: host,
+        host: 'mysql',
         port: port,
         user: user,
         password: password,
-        database: 'mobiusdb',
+        database: 'mobiusdatabase',
         connectionLimit: 100,
         waitForConnections: true,
         debug: false,
