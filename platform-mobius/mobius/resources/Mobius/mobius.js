@@ -34,8 +34,8 @@ global.usecsebase           = 'Mobius';
 global.usecseid             = '/Mobius2';
 global.usecsebaseport       = conf.csebaseport;
 
-global.usedbhost            = 'localhost';
-global.usedbpass            = conf.dbpass;
+global.usedbhost            = 'mysql';
+global.usedbpass            = process.env.MYSQL_ROOT_PASSWORD;
 
 
 global.usepxywsport         = '7577';
