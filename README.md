@@ -11,8 +11,8 @@ Enlacess de interés:
 Usefull links: 
 
 
-https://www.wigle.net/
-https://www.onem2m.org/using-onem2m/developers/api
-https://www.onem2m.org/using-onem2m/developers/device-developers
-https://leafletjs.com/reference.html#map-example
-https://vocore.io/v2.html
+- https://www.wigle.net/
+- https://www.onem2m.org/using-onem2m/developers/api
+- https://www.onem2m.org/using-onem2m/developers/device-developers
+- https://leafletjs.com/reference.html#map-example
+- https://vocore.io/v2.html
