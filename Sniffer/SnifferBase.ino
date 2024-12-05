@@ -3,7 +3,6 @@
 #include <ArduinoJson.h>
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
-#include <HTTPClient.h>
 
 // Define the boot button pin (usually GPIO0 on many ESP32 boards)
 #define BOOT_BUTTON_PIN 0
@@ -22,19 +21,6 @@ unsigned long lastChannelSwitchTime = 0;  // Time when the channel was last swit
 unsigned long channelSwitchInterval = 5000;  // Time interval to switch channels (5 seconds)
 int currentChannel = 1;  // Start from channel 1
 
-// LTE and HTTP variables
-SoftwareSerial simSerial(27, 26); // SIM7000G interface for AT commands (TX, RX)
-HTTPClient http;
-String serverUrl = "http://your.mobius.server.url";  // Replace with your Mobius server URL
-String apn = "your_apn";  // Replace with your APN (e.g., "internet" or whatever your provider requires)
-
-
-String senderMac = "";
-String receiverMac = "";
-int rssi = 0;
-String ssid = "";
-
-
 void setup() {
   // Start the serial communication for debugging
   Serial.begin(115200);
@@ -42,22 +28,15 @@ void setup() {
   // Initialize the boot button pin as input (with pull-up)
   pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP); // Internal pull-up resistor
 
-  // Start the SIM7000G serial interface
-  simSerial.begin(9600); // SIM7000G baud rate for AT commands is typically 9600
-
-  // Start the GPS module
-  ss.begin(9600); // SIM7000G baud rate for GPS is typically 9600
-
-  // Initialize the HTTP client
-  http.begin(serverUrl); // Connect to the Mobius server
-
-  // Initialize LTE connection
-  setupLTE();
-
-  // Start WiFi in promiscuous mode
-  WiFi.mode(WIFI_STA);
+  // Start the WiFi module in promiscuous mode
+  WiFi.mode(WIFI_STA);  // Set to Station mode, necessary for promiscuous mode
   esp_wifi_set_promiscuous(true);  // Enable promiscuous mode
-  esp_wifi_set_promiscuous_rx_cb(promiscuousCallback);  // Register promiscuous callback
+
+  // Register the callback function that processes the captured packets
+  esp_wifi_set_promiscuous_rx_cb(promiscuousCallback);
+
+  // Initialize SIM7000 GPS module
+  ss.begin(9600); // SIM7000G baud rate for GPS is typically 9600
 
   Serial.println("ESP32 Sniffer started...");
 }
@@ -109,82 +88,25 @@ void loop() {
     Serial.println(currentChannel);
     lastChannelSwitchTime = millis();  // Update the last switch time
   }
-
-  // Send data to the Mobius server
-  sendDataToMobius(gpsData);
 }
 
-void setupLTE() {
-  // Start the LTE connection
-  Serial.println("Initializing SIM7000G LTE connection...");
-
-  // Power on the SIM7000G module (send AT commands to initialize the LTE connection)
-  sendATCommand("AT");  // Check communication
-  delay(2000);
-  sendATCommand("AT+CSQ");  // Check signal quality
-  delay(2000);
-  sendATCommand("AT+CGATT=1");  // Attach to the GPRS network
-  delay(2000);
-  sendATCommand("AT+CGDCONT=1,\"IP\",\"" + apn + "\"");  // Set APN
-  delay(2000);
-  sendATCommand("AT+CGACT=1,1");  // Activate the PDP context (connect to the internet)
-  delay(5000);
-}
-
-void sendDataToMobius(String gpsData) {
-  // Create JSON data to send to the Mobius server
-  StaticJsonDocument<1024> doc;
-  
-  // Add fields to the JSON object
-  doc["timestamp"] = millis();
-  doc["channel"] = currentChannel;
-  doc["gps"] = gpsData;
-  
-  // Extract Wi-Fi packet details (these values will be updated in the promiscuous callback)
-  doc["sender_mac"] = senderMac;
-  doc["receiver_mac"] = receiverMac;
-  doc["rssi"] = rssi;
-  doc["ssid"] = ssid;
-
-  // Serialize JSON to string
-  String jsonData;
-  serializeJson(doc, jsonData);
-
-  // Send data to Mobius server
-  http.addHeader("Content-Type", "application/json");  // Set content type as JSON
-  int httpResponseCode = http.POST(jsonData);  // Send HTTP POST request with JSON data
-
-  // Check response
-  if (httpResponseCode > 0) {
-    Serial.print("HTTP Response Code: ");
-    Serial.println(httpResponseCode);
-  } else {
-    Serial.print("Error sending POST request. Code: ");
-    Serial.println(httpResponseCode);
-  }
-
-  // End the HTTP request
-  http.end();
-}
-
+// Callback function that will be triggered when packets are captured
 void promiscuousCallback(void *buf, wifi_promiscuous_pkt_type_t type) {
   wifi_promiscuous_pkt_t *packet = (wifi_promiscuous_pkt_t *)buf;
 
   // Only handle management packets (this can be modified for other types)
   if (type == WIFI_PKT_MGMT) {
     // Extract the RSSI (signal strength) of the packet
-    rssi = packet->rx_ctrl.rssi;
+    int rssi = packet->rx_ctrl.rssi;
 
     // Extract the sender MAC address (Source MAC)
-    uint8_t *senderMacArray = packet->payload + 10;
-    senderMac = macToStr(senderMacArray);
+    uint8_t *senderMac = packet->payload + 10;
 
     // Extract the receiver MAC address (Destination MAC)
-    uint8_t *receiverMacArray = packet->payload + 4;
-    receiverMac = macToStr(receiverMacArray);
+    uint8_t *receiverMac = packet->payload + 4;
 
     // Extract the SSID (if available)
-    ssid = extractSSID(packet->payload, packet->rx_ctrl.sig_len);
+    String ssid = extractSSID(packet->payload, packet->rx_ctrl.sig_len); // Use sig_len instead of len
 
     // Get the timestamp in milliseconds
     unsigned long timestamp = millis();
@@ -194,11 +116,13 @@ void promiscuousCallback(void *buf, wifi_promiscuous_pkt_type_t type) {
 
     // Add fields to the JSON object
     doc["timestamp"] = timestamp;
-    doc["channel"] = currentChannel;
-    doc["sender_mac"] = senderMac;
-    doc["receiver_mac"] = receiverMac;
+    doc["sender_mac"] = macToStr(senderMac);
+    doc["receiver_mac"] = macToStr(receiverMac);
     doc["rssi"] = rssi;
-    doc["ssid"] = ssid;
+    doc["ssid"] = ssid;  // Add the SSID to the JSON
+
+    // Add the current channel to the JSON object
+    doc["channel"] = currentChannel;
 
     // Add GPS data to the JSON
     String gpsData = "";
@@ -219,26 +143,22 @@ void promiscuousCallback(void *buf, wifi_promiscuous_pkt_type_t type) {
 // Function to convert MAC address to string format
 String macToStr(uint8_t *mac) {
   char macStr[18];
-  sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", 
+          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   return String(macStr);
 }
 
-// Function to extract SSID from the Wi-Fi packet
-String extractSSID(uint8_t *payload, uint16_t len) {
-  // Look for the SSID field in the management packet
-  for (int i = 0; i < len; i++) {
-    if (payload[i] == 0x00) {
-      return String((char *)(payload + i + 1));
+// Function to extract SSID from the payload of a management packet
+String extractSSID(uint8_t *payload, size_t len) {
+  // The SSID is located after the 24-byte header of a beacon frame
+  // The SSID is in the variable-length field, starting at byte 25 (index 24)
+  if (len > 24) {
+    uint8_t ssidLength = payload[25];  // The length of the SSID
+    String ssid = "";
+    for (int i = 0; i < ssidLength; i++) {
+      ssid += (char)payload[26 + i];  // Append the SSID bytes
     }
+    return ssid;
   }
-  return String("");
-}
-
-void sendATCommand(String command) {
-  // Send an AT command to the SIM7000G module and print the response
-  simSerial.println(command);
-  delay(1000);
-  while (simSerial.available()) {
-    Serial.write(simSerial.read());  // Print the response to Serial Monitor
-  }
+  return "";
 }
