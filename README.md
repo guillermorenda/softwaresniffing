@@ -6,6 +6,7 @@ Another possible problem that we intend to solve is illegal renting. Only in Bar
 
 ### The Presentation of a Solution
 Our solution consists of a mechanism that will capture packets exchanged between devices that operate on the 2.4 GHz range. Afterward, it will send these packets to the Mobius platform via IoT communication protocols.
+
 The next step is data management on the server side. There, the system will extract all necessary information, including the MAC address of the sender, MAC address of the receiver, RSSI, and GPS coordinates. As is known, all this information is contained within the packet and can be obtained freely.
 Once collected, this information can be processed via a series of algorithms with varying results. For example:
 If the goal is to increase the efficiency of stationary public IoT devices in areas with high Wi-Fi pollution, the algorithm may calculate the most efficient channel range to use at a specific time.
