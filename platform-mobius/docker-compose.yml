@@ -1,0 +1,37 @@
+name: mobius-platform
+
+services:
+    mysql:
+        container_name: "mysql-container"
+        build: "./mysql"
+        env_file: ".env"
+        restart: always
+        ports:
+            - "3306:3306"
+
+        volumes:
+            - db-data:/var/lib/mysql
+        networks:
+            - mobius_internal
+
+
+    mobius_platform:
+        container_name: "mobius"
+        build: "./mobius"
+        env_file: ".env"
+        restart: always
+        depends_on:
+            - mysql
+        ports:
+            - "7579:7579"
+        networks:
+            - mobius_internal
+
+volumes:
+    db-data:
+        name: "mysql-data"
+    
+    mobius_data:
+
+networks:
+    mobius_internal:
