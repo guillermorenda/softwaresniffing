@@ -13,28 +13,29 @@ On the other hand, if the goal is to pinpoint the location of illegal renters, t
 ### Scenario
 This project implements a system for collecting and transmitting information. The system uses an ESP32 as the main device for data acquisition, a SIM7000G for obtaining GPS data and sending information via LTE, and a Raspberry Pi as a central server. The entire setup is powered by a battery, ensuring portability and autonomy for the devices. 
 Selected Hardware
-ESP32: Main microcontroller for data acquisition and processing. 
-SIM7000G: Communication module responsible for:
+**ESP32**: Main microcontroller for data acquisition and processing. 
+**SIM7000G**: Communication module responsible for:
 Obtaining location data using GPS.
 Transmitting the collected data over the LTE network.
-Battery: Power source that supplies energy to both the ESP32 and the SIM7000G module.
-Raspberry Pi: Central server responsible for receiving, storing, and processing the data sent by the SIM7000G module.
+**Battery**: Power source that supplies energy to both the ESP32 and the SIM7000G module.
+**Raspberry Pi**: Central server responsible for receiving, storing, and processing the data sent by the SIM7000G module.
 
 ### Device Connection Description
 The physical connections between devices are set up as follows:
-ESP32 ↔ SIM7000G:
-Data Transmission (TX/RX):
+
+**ESP32 ↔ SIM7000G**:
+**Data Transmission (TX/RX)**:
 The TX pin of the ESP32 is connected to the RX pin of the SIM7000G.
 The RX pin of the ESP32 is connected to the TX pin of the SIM7000G.
-Power Supply:
+**Power Supply**:
 The 3.3V pin of the SIM7000G is connected to the VCC pin of the ESP32.
-Ground (GND):
+**Ground (GND)**:
 The GND pin of the SIM7000G is connected to the GND pin of the ESP32.
 
-Battery:
+**Battery**:
 The battery simultaneously powers both the ESP32 and the SIM7000G module.
 
-Raspberry Pi:
+**Raspberry Pi**:
 The Raspberry Pi connects to the system remotely (e.g., via HTTP, MQTT, or any chosen protocol) to receive the data sent by the SIM7000G.
 
 ### Factors for Improvement
